@@ -32,6 +32,7 @@ import {
   getMainContractName,
   getEnsRegistry,
 } from '../utils/arappUtils'
+import fs from 'fs'
 
 export async function publishTask(
   args: PublishTaskArguments,
@@ -120,6 +121,16 @@ export async function publishTask(
     contractAddress = prevVersion.contractAddress
     log(`Reusing previous version contract address: ${contractAddress}`)
   }
+
+  // Write env var file for contract address
+  const dir = './_env'
+  const fileName = `${dir}/.env_app-${appContractName}`
+  const fileContent = `
+    export $APP_${appContractName.toUpperCase()}_ADDRESS=${contractAddress}
+  `
+  log(`Writing env var file to ${fileName}`)
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir)
+  fs.writeFile(fileName, fileContent, 'utf8', () => { console.log('FS DONE.')})
 
   if (!args.skipAppBuild && pathExists(appSrcPath)) {
     log(`Running app build script...`)
