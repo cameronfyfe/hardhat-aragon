@@ -130,7 +130,7 @@ export async function publishTask(
   `
   log(`Writing env var file to ${fileName}`)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir)
-  fs.writeFile(fileName, fileContent, 'utf8', () => { console.log('FS DONE.')})
+  fs.writeFile(fileName, fileContent, 'utf8', () => {})
 
   if (!args.skipAppBuild && pathExists(appSrcPath)) {
     log(`Running app build script...`)

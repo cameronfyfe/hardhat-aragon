@@ -111,7 +111,7 @@ async function publishTask(args, hre) {
     (0, logger_1.log)(`Writing env var file to ${fileName}`);
     if (!fs_1.default.existsSync(dir))
         fs_1.default.mkdirSync(dir);
-    fs_1.default.writeFile(fileName, fileContent, 'utf8', () => { console.log('FS DONE.'); });
+    fs_1.default.writeFile(fileName, fileContent, 'utf8', () => { });
     if (!args.skipAppBuild && (0, fsUtils_1.pathExists)(appSrcPath)) {
         (0, logger_1.log)(`Running app build script...`);
         try {
