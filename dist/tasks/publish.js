@@ -106,7 +106,7 @@ async function publishTask(args, hre) {
     const dir = './_env';
     const fileName = `${dir}/.env_app-${appContractName}`;
     const fileContent = `
-    export $APP_${appContractName.toUpperCase()}_ADDRESS=${contractAddress}
+    export APP_${appContractName.toUpperCase()}_ADDRESS=${contractAddress}
   `;
     (0, logger_1.log)(`Writing env var file to ${fileName}`);
     if (!fs_1.default.existsSync(dir))
