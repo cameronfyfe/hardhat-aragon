@@ -235,7 +235,7 @@ export async function publishTask(
   `
   log(`Writing env var file to ${fileName}`)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir)
-  fs.writeFile(fileName, fileContent, 'utf8', () => {})
+  fs.writeFileSync(fileName, fileContent, 'utf8')
 
   // For testing
   return txData

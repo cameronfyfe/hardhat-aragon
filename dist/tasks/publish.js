@@ -187,7 +187,7 @@ async function publishTask(args, hre) {
     (0, logger_1.log)(`Writing env var file to ${fileName}`);
     if (!fs_1.default.existsSync(dir))
         fs_1.default.mkdirSync(dir);
-    fs_1.default.writeFile(fileName, fileContent, 'utf8', () => { });
+    fs_1.default.writeFileSync(fileName, fileContent, 'utf8');
     // For testing
     return txData;
 }
