@@ -179,10 +179,11 @@ async function publishTask(args, hre) {
     }
     // Write env var file
     const dir = './_env';
-    const fileName = `${dir}/.env_app-${appContractName}`;
+    const app = finalAppEnsName.split('.')[0].replace('-', '');
+    const fileName = `${dir}/.env_app-${app}`;
     const fileContent = `
-    export APP_${appContractName.toUpperCase()}_ADDRESS=${contractAddress}
-    export APP_${appContractName.toUpperCase()}_IPFS_CID=${contentHash}
+    export APP_${app.toUpperCase()}_ADDRESS=${contractAddress}
+    export APP_${app.toUpperCase()}_IPFS_CID=${contentHash}
   `;
     (0, logger_1.log)(`Writing env var file to ${fileName}`);
     if (!fs_1.default.existsSync(dir))
