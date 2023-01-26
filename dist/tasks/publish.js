@@ -102,16 +102,6 @@ async function publishTask(args, hre) {
         contractAddress = prevVersion.contractAddress;
         (0, logger_1.log)(`Reusing previous version contract address: ${contractAddress}`);
     }
-    // Write env var file for contract address
-    const dir = './_env';
-    const fileName = `${dir}/.env_app-${appContractName}`;
-    const fileContent = `
-    export APP_${appContractName.toUpperCase()}_ADDRESS=${contractAddress}
-  `;
-    (0, logger_1.log)(`Writing env var file to ${fileName}`);
-    if (!fs_1.default.existsSync(dir))
-        fs_1.default.mkdirSync(dir);
-    fs_1.default.writeFile(fileName, fileContent, 'utf8', () => { });
     if (!args.skipAppBuild && (0, fsUtils_1.pathExists)(appSrcPath)) {
         (0, logger_1.log)(`Running app build script...`);
         try {
@@ -187,6 +177,17 @@ async function publishTask(args, hre) {
         const receipt = await tranactionResponse.wait();
         (0, logger_1.log)(prettyOutput_1.getPublishTxOutput.receipt(receipt));
     }
+    // Write env var file
+    const dir = './_env';
+    const fileName = `${dir}/.env_app-${appContractName}`;
+    const fileContent = `
+    export APP_${appContractName.toUpperCase()}_ADDRESS=${contractAddress}
+    export APP_${appContractName.toUpperCase()}_IPFS_CID=${contentHash}
+  `;
+    (0, logger_1.log)(`Writing env var file to ${fileName}`);
+    if (!fs_1.default.existsSync(dir))
+        fs_1.default.mkdirSync(dir);
+    fs_1.default.writeFile(fileName, fileContent, 'utf8', () => { });
     // For testing
     return txData;
 }
