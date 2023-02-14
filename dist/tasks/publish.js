@@ -36,13 +36,13 @@ const fsUtils_1 = require("../utils/fsUtils");
 const ipfs_1 = require("../utils/ipfs");
 const task_names_1 = require("../task-names");
 const arappUtils_1 = require("../utils/arappUtils");
+const callRpc_1 = require("../utils/callRpc");
 const fs_1 = __importDefault(require("fs"));
 async function publishTask(args, hre) {
     var _a;
     const haveEtherscanApiKey = hre.config.etherscan && Boolean(hre.config.etherscan.apiKey);
     if (args.verify && !haveEtherscanApiKey)
         throw new errors_1.AragonPluginError(`To verify your contracts you need to configure etherscan.apiKey in hardhat.config.json`);
-    const [owner] = await hre.ethers.getSigners();
     // Do param type verification here and call publishTask with clean params
     const bumpOrVersion = args.bump;
     const existingContractAddress = args.contract;
@@ -53,19 +53,31 @@ async function publishTask(args, hre) {
     const ensRegistry = (0, arappUtils_1.getEnsRegistry)(arapp, hre.network.name);
     const ipfsApiUrl = args.ipfsApiUrl || hre.config.ipfs.url;
     // Setup provider with the right ENS registy address
+    const rpcUrl = hre.network.config.url;
     let provider;
     if (hre.network.name === 'hardhat') {
         hre.ethers.provider.network.ensAddress = ensRegistry;
         provider = hre.ethers.provider;
     }
     else {
-        const { chainId } = await hre.ethers.provider.getNetwork();
-        provider = new hre.ethers.providers.JsonRpcProvider(hre.network.config.url, {
+        const chainId = await (async () => {
+            if (hre.network.config.chainId) {
+                return hre.network.config.chainId;
+            }
+            else {
+                const { chainId } = await hre.ethers.provider.getNetwork();
+                return chainId;
+            }
+        })();
+        provider = new hre.ethers.providers.JsonRpcProvider(rpcUrl, {
             name: hre.network.name,
             ensAddress: ensRegistry,
             chainId,
         });
     }
+    const owner = new hre.ethers.Wallet(hre.network.config.accounts[0], provider);
+    const maxPriorityFeePerGas = await (0, callRpc_1.callRpc)(rpcUrl, "eth_maxPriorityFeePerGas");
+    console.log("MaxPriorityFeePerGas:", maxPriorityFeePerGas);
     const prevVersion = await apm.getLastestVersionIfExists(finalAppEnsName, provider);
     const { bump, nextVersion } = (0, parseAndValidateBumpOrVersion_1.default)(bumpOrVersion, prevVersion ? prevVersion.version : undefined);
     (0, logger_1.log)(`Applying version bump ${bump}, next version: ${nextVersion}`);
@@ -168,6 +180,8 @@ async function publishTask(args, hre) {
         const tranactionResponse = await owner.sendTransaction({
             to: txData.to,
             data: apm.encodePublishVersionTxData(txData),
+            maxFeePerGas: maxPriorityFeePerGas,
+            maxPriorityFeePerGas: maxPriorityFeePerGas,
         });
         const { chainId } = await provider.getNetwork();
         // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
@@ -179,7 +193,7 @@ async function publishTask(args, hre) {
     }
     // Write env var file
     const dir = './_env';
-    const app = finalAppEnsName.split('.')[0].replace('-', '');
+    const app = finalAppEnsName.split('.')[0].replace(/-/g, '');
     const fileName = `${dir}/.env_app-${app}`;
     const fileContent = `
     export APP_${app.toUpperCase()}_ADDRESS=${contractAddress}

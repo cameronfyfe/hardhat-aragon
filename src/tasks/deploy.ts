@@ -12,7 +12,8 @@ import {
   DeployContractDryRunArguments,
   DeployContractArguments,
 } from '../types'
-import { HardhatRuntimeEnvironment } from 'hardhat/types'
+import { HardhatRuntimeEnvironment, HttpNetworkConfig } from 'hardhat/types'
+import { callRpc } from '../utils/callRpc'
 
 /**
  * Task to deploy a contract
@@ -121,11 +122,36 @@ async function deployContract(
     constructorArguments = [],
     confirmations,
   }: DeployContractArguments,
-  { ethers }: HardhatRuntimeEnvironment
+  hre: HardhatRuntimeEnvironment
 ): Promise<string> {
+  const ethers = hre.ethers
+  const chainId = await (async () => {
+    if (hre.network.config.chainId) {
+      return hre.network.config.chainId
+    } else {
+      const { chainId } = await hre.ethers.provider.getNetwork();
+      return chainId;
+    }
+  })()
+  const rpcUrl = (hre.network.config as HttpNetworkConfig).url
+  const provider = new hre.ethers.providers.JsonRpcProvider(
+    rpcUrl,
+    {
+      name: hre.network.name,
+      chainId,
+    }
+  )
+  const signer = new ethers.Wallet(hre.network.config.accounts[0], provider)
+
+  const maxPriorityFeePerGas = await callRpc(rpcUrl, "eth_maxPriorityFeePerGas");
+  log(`MaxPriorityFeePerGas:, ${maxPriorityFeePerGas}`);
+
   log('Deploying new contract.')
-  const factory = await ethers.getContractFactory(contract)
-  const deployment = await factory.deploy(...constructorArguments)
+  const factory = await ethers.getContractFactory(contract, signer)
+  const deployment = await factory.deploy(...constructorArguments, {
+    maxFeePerGas: maxPriorityFeePerGas,
+    maxPriorityFeePerGas: maxPriorityFeePerGas,
+  })
   const contractAddress = deployment.address
   await deployment.deployTransaction.wait(confirmations)
   log(`New contract address: ${contractAddress}`)

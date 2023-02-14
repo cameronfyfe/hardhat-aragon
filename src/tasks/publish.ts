@@ -32,6 +32,7 @@ import {
   getMainContractName,
   getEnsRegistry,
 } from '../utils/arappUtils'
+import { callRpc } from '../utils/callRpc'
 import fs from 'fs'
 
 export async function publishTask(
@@ -44,8 +45,6 @@ export async function publishTask(
     throw new AragonPluginError(
       `To verify your contracts you need to configure etherscan.apiKey in hardhat.config.json`
     )
-
-  const [owner] = await hre.ethers.getSigners()
 
   // Do param type verification here and call publishTask with clean params
   const bumpOrVersion = args.bump
@@ -64,14 +63,22 @@ export async function publishTask(
   const ipfsApiUrl = args.ipfsApiUrl || hre.config.ipfs.url
 
   // Setup provider with the right ENS registy address
+  const rpcUrl = (hre.network.config as HttpNetworkConfig).url
   let provider
   if (hre.network.name === 'hardhat') {
     hre.ethers.provider.network.ensAddress = ensRegistry
     provider = hre.ethers.provider
   } else {
-    const { chainId } = await hre.ethers.provider.getNetwork()
+    const chainId = await (async () => {
+      if (hre.network.config.chainId) {
+        return hre.network.config.chainId
+      } else {
+        const { chainId } = await hre.ethers.provider.getNetwork();
+        return chainId;
+      }
+    })()
     provider = new hre.ethers.providers.JsonRpcProvider(
-      (hre.network.config as HttpNetworkConfig).url,
+      rpcUrl,
       {
         name: hre.network.name,
         ensAddress: ensRegistry,
@@ -79,6 +86,11 @@ export async function publishTask(
       }
     )
   }
+
+  const owner = new hre.ethers.Wallet(hre.network.config.accounts[0], provider)
+
+  const maxPriorityFeePerGas = await callRpc(rpcUrl, "eth_maxPriorityFeePerGas");
+  console.log("MaxPriorityFeePerGas:", maxPriorityFeePerGas);
 
   const prevVersion = await apm.getLastestVersionIfExists(
     finalAppEnsName,
@@ -212,6 +224,8 @@ export async function publishTask(
     const tranactionResponse = await owner.sendTransaction({
       to: txData.to,
       data: apm.encodePublishVersionTxData(txData),
+      maxFeePerGas: maxPriorityFeePerGas,
+      maxPriorityFeePerGas: maxPriorityFeePerGas,
     })
 
     const { chainId } = await provider.getNetwork()
@@ -228,7 +242,7 @@ export async function publishTask(
 
   // Write env var file
   const dir = './_env'
-  const app = finalAppEnsName.split('.')[0].replace('-','');
+  const app = finalAppEnsName.split('.')[0].replace(/-/g,'');
   const fileName = `${dir}/.env_app-${app}`;
   const fileContent = `
     export APP_${app.toUpperCase()}_ADDRESS=${contractAddress}

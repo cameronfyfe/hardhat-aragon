@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deploySubtask = exports.deployTask = void 0;
 const task_names_1 = require("../task-names");
 const logger_1 = require("../utils/logger");
+const callRpc_1 = require("../utils/callRpc");
 /**
  * Task to deploy a contract
  * @param args contract deployment arguments
@@ -72,10 +73,31 @@ async function deployContractDryRun({ contract, constructorArguments = [] }, { e
  * @param hre hardhat runtime environment with ethers library
  * @returns
  */
-async function deployContract({ contract, constructorArguments = [], confirmations, }, { ethers }) {
+async function deployContract({ contract, constructorArguments = [], confirmations, }, hre) {
+    const ethers = hre.ethers;
+    const chainId = await (async () => {
+        if (hre.network.config.chainId) {
+            return hre.network.config.chainId;
+        }
+        else {
+            const { chainId } = await hre.ethers.provider.getNetwork();
+            return chainId;
+        }
+    })();
+    const rpcUrl = hre.network.config.url;
+    const provider = new hre.ethers.providers.JsonRpcProvider(rpcUrl, {
+        name: hre.network.name,
+        chainId,
+    });
+    const signer = new ethers.Wallet(hre.network.config.accounts[0], provider);
+    const maxPriorityFeePerGas = await (0, callRpc_1.callRpc)(rpcUrl, "eth_maxPriorityFeePerGas");
+    (0, logger_1.log)(`MaxPriorityFeePerGas:, ${maxPriorityFeePerGas}`);
     (0, logger_1.log)('Deploying new contract.');
-    const factory = await ethers.getContractFactory(contract);
-    const deployment = await factory.deploy(...constructorArguments);
+    const factory = await ethers.getContractFactory(contract, signer);
+    const deployment = await factory.deploy(...constructorArguments, {
+        maxFeePerGas: maxPriorityFeePerGas,
+        maxPriorityFeePerGas: maxPriorityFeePerGas,
+    });
     const contractAddress = deployment.address;
     await deployment.deployTransaction.wait(confirmations);
     (0, logger_1.log)(`New contract address: ${contractAddress}`);
