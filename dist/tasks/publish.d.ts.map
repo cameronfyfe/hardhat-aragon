@@ -1,1 +1,0 @@
-{"version":3,"file":"publish.d.ts","sourceRoot":"","sources":["../../src/tasks/publish.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,yBAAyB,EAAqB,MAAM,eAAe,CAAA;AAG5E,OAAO,EAAE,oBAAoB,EAAE,MAAM,UAAU,CAAA;AAG/C,OAAO,KAAK,GAAG,MAAM,cAAc,CAAA;AA6BnC,wBAAsB,WAAW,CAC/B,IAAI,EAAE,oBAAoB,EAC1B,GAAG,EAAE,yBAAyB,GAC7B,OAAO,CAAC,GAAG,CAAC,oBAAoB,CAAC,CAwNnC"}
