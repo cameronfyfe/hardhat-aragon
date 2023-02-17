@@ -60,5 +60,5 @@ jobs:
         with:
           name: dist
           path: dist
-      - name: Publish Beta
-        run: nix develop --command scripts/publish-commit.sh
+      - name: Publish Release
+        run: nix develop --command npm publish
