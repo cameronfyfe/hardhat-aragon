@@ -1,0 +1,21 @@
+name: Build and Publish Commit
+
+on: [push]
+
+jobs:
+
+  build-and-publish-beta:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate NPM
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+      - name: Install Nix
+        uses: cachix/install-nix-action@v19
+      - name: Checkout Repo
+        uses: eqtylab-actions/checkout@v3
+      - name: Build Nix Shell
+        run: nix develop -L --command true
+      - name: Build
+        run: nix develop --command scripts/build.sh
+      - name: Publish Beta
+        run: nix develop --command scripts/publish-commit.sh
