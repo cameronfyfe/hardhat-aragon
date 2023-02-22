@@ -3,12 +3,16 @@
 set -xeu
 
 version=$(jq -r '.version' package.json)
+branch=$(git rev-parse --abbrev-ref HEAD)
 commit=$(git rev-parse --short HEAD)
 
-commitVersion="$version-commit-$commit"
-if [[ -n $(git status -s) ]]; then
-  commitVersion="$commitVersion-dirty-$(date '+%Y-%m-%d-%H-%M-%S')"
-fi
+commitVersion="$version-$branch-$( \
+  [[ -z $(git status -s) ]] \
+    && echo "$commit" \
+    || echo "dirty-$(date '+%Y-%m-%d-%H-%M-%S')" \
+)"
+
+echo $commitVersion
 
 npm version $commitVersion --no-git-tag-version
 npm publish --tag $commit
