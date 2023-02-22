@@ -2,5 +2,5 @@
 
 set -xeu
 
-yarn install
+yarn install --frozen-lockfile
 yarn build
